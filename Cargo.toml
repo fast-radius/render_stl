@@ -1,7 +1,3 @@
 [workspace]
 
-members = [
-    "mesh",
-    "renderer",
-    "part_renderer_cli",
-]
+members = ["mesh", "ray_tracer", "part_renderer_cli"]

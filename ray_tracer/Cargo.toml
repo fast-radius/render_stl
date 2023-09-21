@@ -1,0 +1,18 @@
+[package]
+name = "ray_tracer"
+version = "0.1.0"
+authors = ["Patrick Sullivan <patrick.sullivan@hey.com>"]
+edition = "2018"
+
+[dependencies]
+bitflags = "2.4.0"
+bvh = "0.7.2"
+cgmath = "0.18"
+float_next_after = "1.0.0"
+image = "0.24.7"
+mesh = { path = "../mesh" }
+nom_stl = "0.2.2"
+rand = "0.8.0"
+rand_chacha = "0.3.1"
+rayon = "1.5"
+typed-arena = "2"

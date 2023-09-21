@@ -2,44 +2,44 @@ mod config;
 mod error;
 
 use cgmath::{
-    point2, point3, vec2, vec3, Deg, InnerSpace, Matrix, Matrix4, Point2, Point3, Rad, Transform,
-    Vector2, Vector3,
+    point2, point3, vec2, Deg, InnerSpace, Matrix4, Point2, Point3, Rad, Transform, Vector2,
+    Vector3,
 };
 use error::{Error, Result};
 use image::{imageops, ImageBuffer, Rgba};
 use mesh::{Mesh, MeshBuilder};
-use renderer::camera::Camera;
-use renderer::color::RgbaSpectrum;
-use renderer::filter::MitchellFilter;
-use renderer::integrator::WhittedRayTracer;
-use renderer::light::{self, Light};
-use renderer::sampler::{ConstantSampler, IncrementalSampler, StratifiedSampler};
-use renderer::simple::{Material, OriginalRayTracer, PrimitiveAggregate, Scene};
-use renderer::{camera::OrthographicCamera, film::Film};
+use ray_tracer::color::RgbaSpectrum;
+use ray_tracer::filter::MitchellFilter;
+use ray_tracer::light::Light;
+use ray_tracer::sampler::StratifiedSampler;
+use ray_tracer::simple::{Material, OriginalRayTracer, PrimitiveAggregate, Scene};
+use ray_tracer::{camera::OrthographicCamera, film::Film};
 use std::cmp;
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
+use std::f32::consts::{FRAC_PI_2, PI};
 use typed_arena::Arena;
 
 use crate::config::Config;
 
 fn main() -> Result<()> {
-    let matches = clap::App::new("Part Viewer")
-        .arg(
-            clap::Arg::with_name("CONFIG")
-                .help(
-                    "Path to a RON configuration file that describes a scene and an output image.",
-                )
-                .required(true)
-                .index(1),
-        )
-        .get_matches();
+    println!("hello");
+    Ok(())
+    // let matches = clap::App::new("Part Viewer")
+    //     .arg(
+    //         clap::Arg::with_name("CONFIG")
+    //             .help(
+    //                 "Path to a RON configuration file that describes a scene and an output image.",
+    //             )
+    //             .required(true)
+    //             .index(1),
+    //     )
+    //     .get_matches();
 
-    // The CONFIG argument is required by Clap, so unwrapping is ok.
-    let config_path = matches.value_of("CONFIG").unwrap();
-    let config_file = std::fs::File::open(&config_path)?;
-    let config: Config = ron::de::from_reader(config_file)?;
+    // // The CONFIG argument is required by Clap, so unwrapping is ok.
+    // let config_path = matches.value_of("CONFIG").unwrap();
+    // let config_file = std::fs::File::open(config_path)?;
+    // let config: Config = ron::de::from_reader(config_file)?;
 
-    render_from_config(&config)
+    // render_from_config(&config)
 }
 
 fn render_from_config(config: &Config) -> Result<()> {
@@ -62,7 +62,7 @@ fn render_from_config(config: &Config) -> Result<()> {
     let filter = MitchellFilter::new(2.0, 2.0, 1.0 / 3.0, 1.0 / 3.0);
     let sampler = load_sampler(&config.sampler);
 
-    renderer::render(
+    ray_tracer::render(
         &scene,
         &camera,
         &mut film,
@@ -100,7 +100,7 @@ fn load_mesh<'a>(mesh_arena: &'a mut Arena<Mesh>, part_config: &config::Part) ->
     Ok(mesh)
 }
 
-fn load_material<'a>(material_config: &config::Material) -> Material {
+fn load_material(material_config: &config::Material) -> Material {
     Material::new(
         RgbaSpectrum::from_rgb(
             material_config.color.r,

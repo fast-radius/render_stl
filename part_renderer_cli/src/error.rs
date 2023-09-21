@@ -13,7 +13,6 @@ pub enum Error {
     ParseInt(std::num::ParseIntError),
     ParseFloat(std::num::ParseFloatError),
     Image(image::ImageError),
-    ImageContainerTooSmall,
     EmptyMesh,
     ZeroAreaImage,
 }
@@ -27,9 +26,6 @@ impl fmt::Display for Error {
             Error::ParseInt(e) => write!(f, "Error parsing integer: {:?}", e),
             Error::ParseFloat(e) => write!(f, "Error parsing float: {:?}", e),
             Error::Image(e) => write!(f, "Error performing image operation: {:?}", e),
-            Error::ImageContainerTooSmall => {
-                write!(f, "The container for the image data is too small.")
-            }
             Error::EmptyMesh => write!(f, "Mesh is empty."),
             Error::ZeroAreaImage => write!(f, "Image has an area of zero."),
         }
@@ -45,7 +41,6 @@ impl error::Error for Error {
             Error::ParseInt(e) => Some(e),
             Error::ParseFloat(e) => Some(e),
             Error::Image(e) => Some(e),
-            Error::ImageContainerTooSmall => None,
             Error::EmptyMesh => None,
             Error::ZeroAreaImage => None,
         }

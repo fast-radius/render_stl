@@ -1,9 +1,7 @@
 mod error;
 mod triangle;
 
-use cgmath::{
-    num_traits::identities, InnerSpace, Matrix4, Point2, Point3, SquareMatrix, Transform, Vector3,
-};
+use cgmath::{num_traits::identities, InnerSpace, Matrix4, Point2, Point3, Transform, Vector3};
 pub use error::{Error, Result};
 pub use triangle::Triangle;
 
