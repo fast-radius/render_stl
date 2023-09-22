@@ -1,12 +1,11 @@
-mod builder;
+mod config;
 mod error;
 
-use crate::builder::RenderBuilder;
-use builder::Handedness;
 use cgmath::{
     point2, point3, vec2, Deg, InnerSpace, Matrix4, Point2, Point3, Rad, Transform, Vector2,
     Vector3,
 };
+use config::Handedness;
 use error::{Error, Result};
 use image::{imageops, EncodableLayout, ImageBuffer, Rgba};
 use mesh::{Mesh, MeshBuilder};
@@ -21,57 +20,59 @@ use std::f32::consts::{FRAC_PI_2, PI};
 use std::io::{Read, Seek};
 use typed_arena::Arena;
 
-impl RenderBuilder {
-    pub fn render_to_image<R: Read + Seek>(
-        &self,
-        mesh: R,
-    ) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
-        let mut mesh_arena = Arena::new();
-        let mesh = load_mesh(mesh, &mut mesh_arena, self.part.handedness)?;
-        let material = load_material(&self.part.material);
-        let lights = self.lights.iter().map(load_light).collect();
-        let scene = Scene::new(
-            PrimitiveAggregate::Vector(vec![PrimitiveAggregate::from_mesh(mesh, material)]),
-            lights,
-        );
+pub use config::Config;
 
-        let resolution = Vector2::new(self.width, self.height);
-        let mut film = Film::new(resolution);
-        let camera = load_camera(&self.camera, resolution);
+/// Renders the given STL file to an image.
+pub fn render_to_image<R: Read + Seek>(
+    stl_file: R,
+    config: &Config,
+) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
+    let mut mesh_arena = Arena::new();
+    let mesh = load_mesh(stl_file, &mut mesh_arena, config.handedness)?;
+    let material = load_material(&config.material);
+    let lights = config.lights.iter().map(load_light).collect();
+    let scene = Scene::new(
+        PrimitiveAggregate::Vector(vec![PrimitiveAggregate::from_mesh(mesh, material)]),
+        lights,
+    );
 
-        let filter = MitchellFilter::new(2.0, 2.0, 1.0 / 3.0, 1.0 / 3.0);
-        let sampler = load_sampler(&self.sampler);
+    let resolution = Vector2::new(config.width, config.height);
+    let mut film = Film::new(resolution);
+    let camera = load_camera(&config.camera, resolution);
 
-        ray_tracer::render(
-            &scene,
-            &camera,
-            &mut film,
-            &filter,
-            &sampler,
-            &OriginalRayTracer {},
-            5,
-        );
-        let mut image = film.write_image();
+    let filter = MitchellFilter::new(2.0, 2.0, 1.0 / 3.0, 1.0 / 3.0);
+    let sampler = load_sampler(&config.sampler);
 
-        if self.crop {
-            image = crop_to_non_transparent(&image)?;
-        }
+    ray_tracer::render(
+        &scene,
+        &camera,
+        &mut film,
+        &filter,
+        &sampler,
+        &OriginalRayTracer {},
+        5,
+    );
+    let mut image = film.write_image();
 
-        Ok(image)
+    if config.crop {
+        image = crop_to_non_transparent(&image)?;
     }
 
-    pub fn render_to_bytes<R: Read + Seek>(&self, mesh: R) -> Result<Vec<u8>> {
-        let image = self.render_to_image(mesh)?;
-        let bytes = image.as_bytes();
-        Ok(bytes.to_vec())
-    }
+    Ok(image)
 }
 
-fn load_mesh<'a, R: Read + Seek>(
+/// Renders the given STL file to an image represted as bytes.
+pub fn render_to_bytes<R: Read + Seek>(stl_file: R, config: &Config) -> Result<Vec<u8>> {
+    let image = render_to_image(stl_file, config)?;
+    let bytes = image.as_bytes();
+    Ok(bytes.to_vec())
+}
+
+fn load_mesh<R: Read + Seek>(
     mesh: R,
-    mesh_arena: &'a mut Arena<Mesh>,
+    mesh_arena: &mut Arena<Mesh>,
     handedness: Handedness,
-) -> Result<&'a Mesh> {
+) -> Result<&Mesh> {
     let mut reader = std::io::BufReader::new(mesh);
     let mesh = mesh_arena.alloc(MeshBuilder::from_stl(&mut reader)?.build());
     let (bounds_min, bounds_max) = mesh.bounding_box().ok_or(Error::EmptyMesh)?;
@@ -82,14 +83,14 @@ fn load_mesh<'a, R: Read + Seek>(
     let bounding_sphere_radius = max_distance_from_origin(mesh);
     mesh.transform(Matrix4::from_scale(1.0 / bounding_sphere_radius));
 
-    if handedness == builder::Handedness::RightHanded {
+    if handedness == config::Handedness::RightHanded {
         mesh.transform_swapping_handedness(Matrix4::from_nonuniform_scale(1.0, -1.0, 1.0));
     }
 
     Ok(mesh)
 }
 
-fn load_material(material_config: &builder::Material) -> Material {
+fn load_material(material_config: &config::Material) -> Material {
     Material::new(
         RgbaSpectrum::from_rgb(
             material_config.color.r,
@@ -104,9 +105,9 @@ fn load_material(material_config: &builder::Material) -> Material {
     )
 }
 
-fn load_light(light_config: &builder::Light) -> Light {
+fn load_light(light_config: &config::Light) -> Light {
     match light_config {
-        builder::Light::PointLight {
+        config::Light::PointLight {
             position,
             intensity,
         } => {
@@ -124,10 +125,10 @@ fn load_light(light_config: &builder::Light) -> Light {
     }
 }
 
-fn load_camera(camera_config: &builder::Camera, resolution: Vector2<usize>) -> OrthographicCamera {
+fn load_camera(camera_config: &config::Camera, resolution: Vector2<usize>) -> OrthographicCamera {
     // TODO: Return Camera trait object instead.
     match camera_config {
-        builder::Camera::OrthographicCamera {
+        config::Camera::OrthographicCamera {
             position,
             z_near,
             z_far,
@@ -145,13 +146,12 @@ fn load_camera(camera_config: &builder::Camera, resolution: Vector2<usize>) -> O
                 resolution,
             )
         }
-        builder::Camera::PerspectiveCamera { .. } => todo!(),
     }
 }
 
-fn load_sampler(sampler_config: &builder::Sampler) -> StratifiedSampler {
+fn load_sampler(sampler_config: &config::Sampler) -> StratifiedSampler {
     match sampler_config {
-        builder::Sampler::StratifiedSampler {
+        config::Sampler::StratifiedSampler {
             x_strata_count,
             y_strata_count,
             jitter,
