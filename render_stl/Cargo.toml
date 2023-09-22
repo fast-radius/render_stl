@@ -1,0 +1,14 @@
+[package]
+name = "render_stl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cgmath = "0.18"
+futures = "0.3"
+image = "0.24.7"
+mesh = { path = "../mesh" }
+ray_tracer = { path = "../ray_tracer" }
+ron = "0.8.1"
+serde = { version = "1.0", features = ["derive"] }
+typed-arena = "2"
