@@ -6,7 +6,6 @@ use cgmath::{
     Vector3,
 };
 use config::Handedness;
-use error::{Error, Result};
 use image::{imageops, EncodableLayout, ImageBuffer, Rgba};
 use mesh::{Mesh, MeshBuilder};
 use ray_tracer::color::RgbaSpectrum;
@@ -21,12 +20,13 @@ use std::io::{Read, Seek};
 use typed_arena::Arena;
 
 pub use config::Config;
+pub use error::Error;
 
 /// Renders the given STL file to an image.
 pub fn render_to_image<R: Read + Seek>(
     stl_file: R,
     config: &Config,
-) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
+) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>, Error> {
     let mut mesh_arena = Arena::new();
     let mesh = load_mesh(stl_file, &mut mesh_arena, config.handedness)?;
     let material = load_material(&config.material);
@@ -62,7 +62,7 @@ pub fn render_to_image<R: Read + Seek>(
 }
 
 /// Renders the given STL file to an image represted as bytes.
-pub fn render_to_bytes<R: Read + Seek>(stl_file: R, config: &Config) -> Result<Vec<u8>> {
+pub fn render_to_bytes<R: Read + Seek>(stl_file: R, config: &Config) -> Result<Vec<u8>, Error> {
     let image = render_to_image(stl_file, config)?;
     let bytes = image.as_bytes();
     Ok(bytes.to_vec())
@@ -72,7 +72,7 @@ fn load_mesh<R: Read + Seek>(
     mesh: R,
     mesh_arena: &mut Arena<Mesh>,
     handedness: Handedness,
-) -> Result<&Mesh> {
+) -> Result<&Mesh, Error> {
     let mut reader = std::io::BufReader::new(mesh);
     let mesh = mesh_arena.alloc(MeshBuilder::from_stl(&mut reader)?.build());
     let (bounds_min, bounds_max) = mesh.bounding_box().ok_or(Error::EmptyMesh)?;
@@ -197,7 +197,7 @@ fn max_distance_from_origin(mesh: &Mesh) -> f32 {
 /// Crop transparent edges from the image.
 fn crop_to_non_transparent(
     image: &ImageBuffer<Rgba<u8>, Vec<u8>>,
-) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
+) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>, Error> {
     let (crop_bounds_min, crop_bounds_max) =
         non_transparent_bounds(image).ok_or(Error::ZeroAreaImage)?;
     let crop_bounds_diag = crop_bounds_max - crop_bounds_min;
