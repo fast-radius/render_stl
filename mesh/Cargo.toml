@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 cgmath = "0.18"
 nom_stl = "0.2.2"
+thiserror = "1.0.48"

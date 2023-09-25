@@ -9,4 +9,5 @@ futures = "0.3"
 image = "0.24.7"
 mesh = { path = "../mesh" }
 ray_tracer = { path = "../ray_tracer" }
+thiserror = "1.0.48"
 typed-arena = "2"

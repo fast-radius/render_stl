@@ -1,5 +1,3 @@
-use serde::Deserialize;
-
 /// A configuration that describes how to render a mesh.
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -120,14 +118,14 @@ impl Config {
 }
 
 /// A position in spherical coordinates.
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub(super) struct Spherical {
     pub radius: f32,
     pub theta: f32,
     pub phi: f32,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub(super) struct Rgb {
     pub r: f32,
     pub g: f32,
@@ -153,7 +151,7 @@ impl Default for Sampler {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Handedness {
     LeftHanded,
     RightHanded,
