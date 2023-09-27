@@ -1,5 +1,3 @@
-use std::result;
-
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
