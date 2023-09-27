@@ -6,7 +6,7 @@ use cgmath::{
     Vector3,
 };
 use config::Handedness;
-use image::{imageops, EncodableLayout, ImageBuffer, Rgba};
+use image::{imageops, ImageBuffer, ImageOutputFormat, Rgba};
 use mesh::{Mesh, MeshBuilder};
 use ray_tracer::color::RgbaSpectrum;
 use ray_tracer::filter::MitchellFilter;
@@ -16,7 +16,7 @@ use ray_tracer::simple::{Material, OriginalRayTracer, PrimitiveAggregate, Scene}
 use ray_tracer::{camera::OrthographicCamera, film::Film};
 use std::cmp;
 use std::f32::consts::{FRAC_PI_2, PI};
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, Write};
 use typed_arena::Arena;
 
 pub use config::Config;
@@ -61,11 +61,15 @@ pub fn render_to_image<R: Read + Seek>(
     Ok(image)
 }
 
-/// Renders the given STL file to an image represted as bytes.
-pub fn render_to_bytes<R: Read + Seek>(stl_file: R, config: &Config) -> Result<Vec<u8>, Error> {
+/// Renders the STL file to the writer in the PNG formata.
+pub fn render_to_writer<R: Read + Seek, W: Write + Seek>(
+    stl_file: R,
+    config: &Config,
+    w: &mut W,
+) -> Result<(), Error> {
     let image = render_to_image(stl_file, config)?;
-    let bytes = image.as_bytes();
-    Ok(bytes.to_vec())
+    image.write_to(w, ImageOutputFormat::Png)?;
+    Ok(())
 }
 
 fn load_mesh<R: Read + Seek>(
